@@ -4,7 +4,7 @@ import { contextEnv, contextFile, getContext, networkFromContextFile } from './c
 import {
   compressPublicKey, integerToDecimal, decimalToInteger, readSignedTxJson,
   saveUnsignedTxJson, toBN, initCtxJson, publicKeyToEthereumAddressString,
-  getUserInput, validatePublicKey, addFlagForSentSignedTx, isAlreadySentToChain
+  getUserInput, validatePublicKey, addFlagForSentSignedTx, isAlreadySentToChain, delegationAddressCount
 } from './utils'
 import { exportTxCP, importTxPC, issueSignedEvmTxPCImport, getUnsignedExportTxCP, getUnsignedImportTxPC, issueSignedEvmTxCPExport } from './transaction/evmAtomicTx'
 import { exportTxPC, importTxCP, getUnsignedImportTxCP, issueSignedPvmTx, getUnsignedExportTxPC } from './transaction/pvmAtomicTx'
