@@ -419,8 +419,8 @@ async function cliBuildAndSendTxUsingPrivateKey(transactionType: string, ctx: Co
     if (usedFee) logInfo(`Used fee of ${integerToDecimal(usedFee, 9)} FLR`)
     logSuccess(`Transaction with id ${txid} built and sent to the network`)
   }
-  catch(error){
-    logError(error as string)
+  catch(error: any){
+    logError(error.message as string)
   }
 }
 
