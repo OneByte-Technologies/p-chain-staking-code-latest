@@ -413,10 +413,15 @@ async function cliSendSignedTxJson(ctx: Context, id: string) {
   logSuccess(`Signed transaction ${id} with id ${chainTxId} sent to the node`)
 }
 
-async function cliBuildAndSendTxUsingPrivateKey(transactionType: string, ctx: Context, params: FlareTxParams) {
-  const { txid, usedFee } = await buildAndSendTxUsingPrivateKey(transactionType, ctx, params)
-  if (usedFee) logInfo(`Used fee of ${integerToDecimal(usedFee, 9)} FLR`)
-  logSuccess(`Transaction with id ${txid} built and sent to the network`)
+async function cliBuildAndSendTxUsingPrivateKey(transactionType: string, ctx: Context, params: FlareTxParams): Promise<void> {
+  try{
+    const { txid, usedFee } = await buildAndSendTxUsingPrivateKey(transactionType, ctx, params)
+    if (usedFee) logInfo(`Used fee of ${integerToDecimal(usedFee, 9)} FLR`)
+    logSuccess(`Transaction with id ${txid} built and sent to the network`)
+  }
+  catch(error){
+    logError(error as string)
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
