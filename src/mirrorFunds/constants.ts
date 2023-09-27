@@ -2,11 +2,11 @@
  * Contract based info
  */
 export const costwoPChainStakeMirrorContract = '0x3F65F2e9e25EdA1189c3aF3D596f1c2E71ececa9';
-export const flarePChainStakeMirrorContract = '0x3F65F2e9e25EdA1189c3aF3D596f1c2E71ececa9';
+export const flarePChainStakeMirrorContract = '0x7b61F9F27153a4F2F57Dc30bF08A8eb0cCB96C22';
 /**
  * RPC based info
  */
-export const flarePublicRPC = 'https://flare-api.flare.network/';
+export const flarePublicRPC = 'https://flare-api.flare.network/ext/C/rpc';
 export const costwoPublicRPC = 'https://coston2-api.flare.network/ext/C/rpc';
 
 export const pChainStakeMirrorContractFromNetwork = (network: string) => {
