@@ -116,7 +116,7 @@ export async function interactiveCli(baseargv: string[]) {
       }
     }
     else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
-      // explicitly throw error when ctx.json doesnt exits
+      // explicitly throw error when ctx.json doesn't exits
       if(!fileExists("ctx.json")){
         console.error("ctx.json does not exist")
         return;
