@@ -16,7 +16,6 @@ import { getSignature, sendToForDefi } from './forDefi/forDefi'
 import { createWithdrawalTransaction, sendSignedWithdrawalTransaction } from './forDefi/withdrawal'
 import { log, logError, logInfo, logSuccess } from './output'
 import { colorCodes } from "./constants"
-// import { fetchMirrorFunds } from "./mirrorFunds/main"
 import { getRpcUrl, submitForDefiTxn, fetchMirrorFunds } from './flareContract'
 import { contractTransactionName } from './flareContractConstants'
 import fs from 'fs'
