@@ -16,8 +16,8 @@ import { exit } from "process";
 
 type DelegatedAmount = {
   stakeAmount: number,
-  startTime: number,
-  endTime: number
+  startTime: Date,
+  endTime: Date
 }
 
 /**
@@ -307,11 +307,14 @@ const fetchDelegateStake = async (ctx: Context, validatorFunction: (ctx: Context
       if (
         validatorData[i].delegators[j] &&
         validatorData[i].delegators[j].rewardOwner.addresses.includes(ctx.pAddressBech32)
+
       ) {
+        const startDate = new Date(parseInt(validatorData[i]?.delegators[j]?.startTime) * 1000)
+        const endDate = new Date(parseInt(validatorData[i]?.delegators[j]?.endTime) * 1000)
         userStake.push({
-          stakeAmount: parseInt(validatorData[i]?.delegators[j]?.stakeAmount),
-          startTime: parseInt(validatorData[i]?.delegators[j]?.startTime),
-          endTime: parseInt(validatorData[i]?.delegators[j]?.endTime)
+          stakeAmount: parseFloat(validatorData[i]?.delegators[j]?.stakeAmount) / 1e9,
+          startTime: startDate,
+          endTime: endDate
         });
       }
     }
@@ -335,22 +338,24 @@ const getTotalFromDelegation = (data: DelegatedAmount[]) => {
  */
 export async function fetchMirrorFunds(ctx: Context) {
   console.log("Checking your Mirror Funds ...")
+  // fetch from the contract
   const rpcUrl = getRpcUrl(ctx.config.hrp);
   const pChainStakeMirrorContractAddress = await getContractAddress(ctx.config.hrp, pChainStakeMirror)
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
   const abi = getPChainStakeMirrorABI() as ethers.ContractInterface
   const contract = new ethers.Contract(pChainStakeMirrorContractAddress, abi, provider);
-  const stakedAmount = await contract.stakesOf(ctx.cAddressHex);
+  const stakedAmount = await contract.balanceOf(ctx.cAddressHex);
+  const stakedAmountInFLR = parseFloat(integerToDecimal(stakedAmount.toString(), 18));
+  // fetch for the chain
   const delegationToCurrentValidator = await fetchDelegateStake(ctx, fetchValidatorInfo);
   const delegationToPendingValidator = await fetchDelegateStake(ctx, fetchPendingValidatorInfo);
   const totalDelegatedAmount =
     getTotalFromDelegation(delegationToCurrentValidator) +
-    getTotalFromDelegation(delegationToPendingValidator) +
-    stakedAmount;
-  const totalInFLR = integerToDecimal(totalDelegatedAmount.toString(), 9);
+    getTotalFromDelegation(delegationToPendingValidator)
+  const totalInFLR = parseFloat(totalDelegatedAmount.toString());
   return {
-    TotalAmount: totalInFLR,
-    MirrorFunds: {
+    "Total Mirrored Amount": `${totalInFLR} FLR`,
+    "Mirror Funds Details": {
       ...delegationToCurrentValidator,
       ...delegationToPendingValidator
     }
