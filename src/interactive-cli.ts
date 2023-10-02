@@ -21,361 +21,374 @@ import { BN } from '@flarenetwork/flarejs/dist'
  * @returns {void}
  */
 export async function interactiveCli(baseargv: string[]) {
-  const walletProperties: ConnectWalletInterface = await connectWallet()
-  const task = await selectTask()
-  const program = new Command("Flare Stake Tool")
-  await cli(program)
-
-  // First 4 info functions
-  if (Object.keys(taskConstants).slice(0, 4).includes(task.toString())) {
-
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] || walletProperties.wallet == Object.keys(walletConstants)[1]) {
-      const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--ctx-file=ctx.json`]
-      await program.parseAsync(argsInfo)
+  let initialised = false
+  let walletProperties: ConnectWalletInterface;
+  while (true) {
+    if (!initialised) {
+      walletProperties = await connectWallet();
+      initialised = true
     }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.path && walletProperties.network) {
-      const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      await program.parseAsync(argsInfo)
-    }
-    else {
-      console.log("Incorrect arguments passed!")
-    }
-  }
+    const task = await selectTask()
+    const program = new Command("Flare Stake Tool")
+    await cli(program)
+    if (walletProperties!) {
+      // First 4 info functions
+      if (Object.keys(taskConstants).slice(0, 4).includes(task.toString())) {
 
-  // Functions for export and import to move funds between chains
-  else if (Object.keys(taskConstants).slice(4, 6).includes(task.toString())) {
-
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxDerivationPath) {
-        const amount = await prompts.amount()
-        const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
-        // ask for fees if its exportCP transaction
-        if (taskConstants[task].slice(0, 1) == 'C') {
-          const exportBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(0, 1))
-          const exportFees = await prompts.fees(exportBaseFee);
-          argsExport.push('-f', `${exportFees.fees}`)
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] || walletProperties.wallet == Object.keys(walletConstants)[1]) {
+          const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--ctx-file=ctx.json`]
+          await program.parseAsync(argsInfo);
         }
-        console.log("Please approve export transaction")
-        await program.parseAsync(argsExport)
-        const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
-        // ask for fees if its importTxPC
-        if (taskConstants[task].slice(0, 1) == 'P') {
-          const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
-          const exportFees = await prompts.fees(importBaseFee);
-          argsImport.push('-f', `${exportFees.fees}`)
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.path && walletProperties.network) {
+          const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          await program.parseAsync(argsInfo)
         }
-        console.log("Please approve import transaction")
-        await program.parseAsync(argsImport)
+        else {
+          console.log("Incorrect arguments passed!")
+        }
       }
-      else {
-        console.log("Missing params in ctx file")
-      }
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
-        const isContinue = await prompts.forDefiContinue()
-        if (!isContinue.isContinue) {
-          const txnType = await prompts.forDefiTxn()
-          const txnId = await prompts.transactionId()
-          if (txnType.txn.includes("Export")) {
+
+      // Functions for export and import to move funds between chains
+      else if (Object.keys(taskConstants).slice(4, 6).includes(task.toString())) {
+
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxDerivationPath) {
             const amount = await prompts.amount()
-            const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "-i", `${txnId.id}`]
+            const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
             // ask for fees if its exportCP transaction
             if (taskConstants[task].slice(0, 1) == 'C') {
               const exportBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(0, 1))
               const exportFees = await prompts.fees(exportBaseFee);
               argsExport.push('-f', `${exportFees.fees}`)
             }
+            console.log("Please approve export transaction")
             await program.parseAsync(argsExport)
-          }
-          else if (txnType.txn.includes("Import")) {
-            const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "-i", `${txnId.id}`]
+            const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
             // ask for fees if its importTxPC
             if (taskConstants[task].slice(0, 1) == 'P') {
               const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
               const exportFees = await prompts.fees(importBaseFee);
               argsImport.push('-f', `${exportFees.fees}`)
             }
+            console.log("Please approve import transaction")
             await program.parseAsync(argsImport)
           }
-          const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
-          await program.parseAsync(argsSign)
+          else {
+            console.log("Missing params in ctx file")
+          }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+            const isContinue = await prompts.forDefiContinue()
+            if (!isContinue.isContinue) {
+              const txnType = await prompts.forDefiTxn()
+              const txnId = await prompts.transactionId()
+              if (txnType.txn.includes("Export")) {
+                const amount = await prompts.amount()
+                const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "-i", `${txnId.id}`]
+                // ask for fees if its exportCP transaction
+                if (taskConstants[task].slice(0, 1) == 'C') {
+                  const exportBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(0, 1))
+                  const exportFees = await prompts.fees(exportBaseFee);
+                  argsExport.push('-f', `${exportFees.fees}`)
+                }
+                await program.parseAsync(argsExport)
+              }
+              else if (txnType.txn.includes("Import")) {
+                const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "-i", `${txnId.id}`]
+                // ask for fees if its importTxPC
+                if (taskConstants[task].slice(0, 1) == 'P') {
+                  const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
+                  const exportFees = await prompts.fees(importBaseFee);
+                  argsImport.push('-f', `${exportFees.fees}`)
+                }
+                await program.parseAsync(argsImport)
+              }
+              const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
+              await program.parseAsync(argsSign)
+            }
+            else {
+              const txnId = await prompts.transactionId()
+              const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+              await program.parseAsync(argsFetch)
+              const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+              await program.parseAsync(argsSend)
+            }
+          }
+          else {
+            console.log("Missing params in ctx file")
+          }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
+          // // explicitly throw error when ctx.json doesn't exist
+          const amount = await prompts.amount()
+          const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          // ask for fees if its exportCP transaction
+          if (taskConstants[task].slice(0, 1) == 'C') {
+            const exportBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(0, 1), walletProperties.path, walletProperties.network)
+            const exportFees = await prompts.fees(exportBaseFee);
+            argsExport.push('-f', `${exportFees.fees}`)
+          }
+          console.log("Please approve export transaction")
+          await program.parseAsync(argsExport)
+          const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          // ask for fees if its importTxPC
+          if (taskConstants[task].slice(0, 1) == 'P') {
+            const importBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(1, 2), walletProperties.path, walletProperties.network)
+            const exportFees = await prompts.fees(importBaseFee);
+            argsImport.push('-f', `${exportFees.fees}`)
+          }
+          console.log("Please approve import transaction")
+          await program.parseAsync(argsImport)
         }
         else {
-          const txnId = await prompts.transactionId()
-          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
-          await program.parseAsync(argsFetch)
-          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
-          await program.parseAsync(argsSend)
+          console.log("Incorrect arguments passed!")
         }
       }
-      else {
-        console.log("Missing params in ctx file")
-      }
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
-      // // explicitly throw error when ctx.json doesn't exist
-      const amount = await prompts.amount()
-      const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      // ask for fees if its exportCP transaction
-      if (taskConstants[task].slice(0, 1) == 'C') {
-        const exportBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(0, 1), walletProperties.path, walletProperties.network)
-        const exportFees = await prompts.fees(exportBaseFee);
-        argsExport.push('-f', `${exportFees.fees}`)
-      }
-      console.log("Please approve export transaction")
-      await program.parseAsync(argsExport)
-      const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      // ask for fees if its importTxPC
-      if (taskConstants[task].slice(0, 1) == 'P') {
-        const importBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(1, 2), walletProperties.path, walletProperties.network)
-        const exportFees = await prompts.fees(importBaseFee);
-        argsImport.push('-f', `${exportFees.fees}`)
-      }
-      console.log("Please approve import transaction")
-      await program.parseAsync(argsImport)
-    }
-    else {
-      console.log("Incorrect arguments passed!")
-    }
-  }
 
-  // Adding a validator
-  else if (Object.keys(taskConstants)[6] == task.toString()) {
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
-        publicKey: ctxPublicKey, flareAddress: ctxPAddress } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxDerivationPath && ctxPAddress && ctxCAddress) {
+      // Adding a validator
+      else if (Object.keys(taskConstants)[6] == task.toString()) {
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
+            publicKey: ctxPublicKey, flareAddress: ctxPAddress } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxDerivationPath && ctxPAddress && ctxCAddress) {
 
-        await checkAddressRegistrationLedger(walletProperties.wallet, ctxNetwork, ctxDerivationPath, ctxCAddress, ctxPublicKey, ctxPAddress)
+            await checkAddressRegistrationLedger(walletProperties.wallet, ctxNetwork, ctxDerivationPath, ctxCAddress, ctxPublicKey, ctxPAddress)
 
-        const { amount, nodeId, startTime, endTime, delegationFee } = await getDetailsForDelegation(taskConstants[task])
-        if (ctxNetwork && ctxDerivationPath && delegationFee) {
-          const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
-          await program.parseAsync(argsValidator)
-        } else {
-          console.log("Missing values for certain params")
-        }
-      }
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
-        const isContinue = await prompts.forDefiContinue()
-        if (!isContinue.isContinue) {
-
-          const isRegistered: boolean = await checkAddressRegistrationForDefi(ctxNetwork)
-
-          let txnId
-          if (isRegistered) {
-            txnId = await prompts.transactionId()
-            txnId = txnId.id
             const { amount, nodeId, startTime, endTime, delegationFee } = await getDetailsForDelegation(taskConstants[task])
-            const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, "-i", `${txnId}`]
-            await program.parseAsync(argsValidator)
+            if (ctxNetwork && ctxDerivationPath && delegationFee) {
+              const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
+              await program.parseAsync(argsValidator)
+            } else {
+              console.log("Missing values for certain params")
+            }
+          }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+            const isContinue = await prompts.forDefiContinue()
+            if (!isContinue.isContinue) {
+
+              const isRegistered: boolean = await checkAddressRegistrationForDefi(ctxNetwork)
+
+              let txnId
+              if (isRegistered) {
+                txnId = await prompts.transactionId()
+                txnId = txnId.id
+                const { amount, nodeId, startTime, endTime, delegationFee } = await getDetailsForDelegation(taskConstants[task])
+                const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, "-i", `${txnId}`]
+                await program.parseAsync(argsValidator)
+              }
+              else {
+                txnId = await registerAddressForDefi(walletProperties.wallet, ctxNetwork, ctxPublicKey)
+              }
+
+              const argsSign = makeForDefiArguments("sign", baseargv, txnId)
+              await program.parseAsync(argsSign)
+            }
+            else {
+              const txnId = await prompts.transactionId()
+              const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+              await program.parseAsync(argsFetch)
+              const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+              await program.parseAsync(argsSend)
+            }
           }
           else {
-            txnId = await registerAddressForDefi(walletProperties.wallet, ctxNetwork, ctxPublicKey)
+            console.log("Missing params in ctx file")
           }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
 
-          const argsSign = makeForDefiArguments("sign", baseargv, txnId)
-          await program.parseAsync(argsSign)
+          await checkAddressRegistrationPrivateKey(walletProperties.wallet, walletProperties.network!, walletProperties.path!)
+
+          const { amount, nodeId, startTime, endTime, delegationFee } = await getDetailsForDelegation(taskConstants[task])
+          const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, `--env-path=${walletProperties.path}`, "--get-hacked"]
+          await program.parseAsync(argsValidator)
         }
         else {
-          const txnId = await prompts.transactionId()
-          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
-          await program.parseAsync(argsFetch)
-          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
-          await program.parseAsync(argsSend)
+          console.log("only pvt key and ledger supported for staking right now")
         }
       }
-      else {
-        console.log("Missing params in ctx file")
-      }
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
 
-      await checkAddressRegistrationPrivateKey(walletProperties.wallet, walletProperties.network!, walletProperties.path!)
+      // Delegating to a Validator
+      else if (Object.keys(taskConstants)[7] == task.toString()) {
 
-      const { amount, nodeId, startTime, endTime, delegationFee } = await getDetailsForDelegation(taskConstants[task])
-      const argsValidator = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, '--delegation-fee', `${delegationFee}`, `--env-path=${walletProperties.path}`, "--get-hacked"]
-      await program.parseAsync(argsValidator)
-    }
-    else {
-      console.log("only pvt key and ledger supported for staking right now")
-    }
-  }
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
+            publicKey: ctxPublicKey, flareAddress: ctxPAddress } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxDerivationPath && ctxPAddress && ctxCAddress) {
 
-  // Delegating to a Validator
-  else if (Object.keys(taskConstants)[7] == task.toString()) {
+            await checkAddressRegistrationLedger(walletProperties.wallet, ctxNetwork, ctxDerivationPath, ctxCAddress, ctxPublicKey, ctxPAddress)
 
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
-        publicKey: ctxPublicKey, flareAddress: ctxPAddress } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxDerivationPath && ctxPAddress && ctxCAddress) {
-
-        await checkAddressRegistrationLedger(walletProperties.wallet, ctxNetwork, ctxDerivationPath, ctxCAddress, ctxPublicKey, ctxPAddress)
-
-        const { amount, nodeId, startTime, endTime } = await getDetailsForDelegation(taskConstants[task])
-        const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
-        await program.parseAsync(argsDelegate)
-      } else {
-        console.log("Missing params in ctx file")
-      }
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
-      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
-        const isContinue = await prompts.forDefiContinue()
-        if (!isContinue.isContinue) {
-
-          const isRegistered: boolean = await checkAddressRegistrationForDefi(ctxNetwork)
-
-          let txnId
-          if (isRegistered) {
-            txnId = await prompts.transactionId()
-            txnId = txnId.id
             const { amount, nodeId, startTime, endTime } = await getDetailsForDelegation(taskConstants[task])
-            const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, "-i", `${txnId}`]
+            const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
             await program.parseAsync(argsDelegate)
+          } else {
+            console.log("Missing params in ctx file")
+          }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+          if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+            const isContinue = await prompts.forDefiContinue()
+            if (!isContinue.isContinue) {
+
+              const isRegistered: boolean = await checkAddressRegistrationForDefi(ctxNetwork)
+
+              let txnId
+              if (isRegistered) {
+                txnId = await prompts.transactionId()
+                txnId = txnId.id
+                const { amount, nodeId, startTime, endTime } = await getDetailsForDelegation(taskConstants[task])
+                const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, "-i", `${txnId}`]
+                await program.parseAsync(argsDelegate)
+              }
+              else {
+                txnId = await registerAddressForDefi(walletProperties.wallet, ctxNetwork, ctxPublicKey)
+              }
+
+              const argsSign = makeForDefiArguments("sign", baseargv, txnId)
+              await program.parseAsync(argsSign)
+            }
+            else {
+              const txnId = await prompts.transactionId()
+              const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+              await program.parseAsync(argsFetch)
+              const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+              await program.parseAsync(argsSend)
+            }
           }
           else {
-            txnId = await registerAddressForDefi(walletProperties.wallet, ctxNetwork, ctxPublicKey)
+            console.log("Missing params in ctx file")
           }
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
 
-          const argsSign = makeForDefiArguments("sign", baseargv, txnId)
-          await program.parseAsync(argsSign)
+          await checkAddressRegistrationPrivateKey(walletProperties.wallet, walletProperties.network!, walletProperties.path!)
+
+          const { amount, nodeId, startTime, endTime } = await getDetailsForDelegation(taskConstants[task])
+          const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, `--env-path=${walletProperties.path}`, "--get-hacked"]
+          await program.parseAsync(argsDelegate)
         }
         else {
+          console.log("only pvt key and ledger supported for delegation right now")
+        }
+      }
+
+      // Mirror funds
+      else if (Object.keys(taskConstants)[8] == (task.toString())) {
+
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] || walletProperties.wallet == Object.keys(walletConstants)[1]) {
+          const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--ctx-file=ctx.json`]
+          await program.parseAsync(argsInfo)
+        }
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.path && walletProperties.network) {
+          const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          await program.parseAsync(argsInfo)
+        }
+        else {
+          console.log("Incorrect arguments passed!")
+        }
+      }
+
+      // Claim Rewards
+      else if (Object.keys(taskConstants)[9] == task.toString()) {
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+          const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress } = readInfoFromCtx("ctx.json")
+          const isUnclaimed = await isUnclaimedReward(ctxCAddress!, ctxNetwork)
+          if (isUnclaimed) await claimRewardsLedger(walletProperties.wallet, ctxCAddress!, ctxDerivationPath!, ctxNetwork)
+        }
+
+        else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+          const context: Context = contextFile("ctx.json")
+          const isUnclaimed = await isUnclaimedReward(context.cAddressHex!, context.config.hrp)
+          if (isUnclaimed) {
+            const isContinue = await prompts.forDefiContinue()
+            const txnId = await prompts.transactionId()
+            if (!isContinue.isContinue) {
+              await claimRewardsForDefi(walletProperties.wallet, txnId.id)
+              const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
+              await program.parseAsync(argsSign)
+            }
+            else {
+              const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+              await program.parseAsync(argsFetch)
+              const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+              await program.parseAsync(argsSend)
+            }
+          }
+        }
+
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
+          const context: Context = contextEnv(walletProperties.path, walletProperties.network)
+          const isUnclaimed = await isUnclaimedReward(context.cAddressHex!, context.config.hrp)
+          if (isUnclaimed) await claimRewardsPrivateKey(walletProperties.wallet, context)
+        }
+      }
+
+      // Withdraw funds
+      else if (Object.keys(taskConstants)[10] == task.toString()) {
+        if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+          const { derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
+          const amount = await prompts.amount()
+          const withdrawAddress = await prompts.withdrawAddress()
+          const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`,]
+          await program.parseAsync(argsWithdraw)
+
+          const argsSign = [...baseargv.slice(0, 2), "sign-hash", "--derivation-path", ctxDerivationPath!]
+          await program.parseAsync(argsSign)
+
+          const argsSend = [...baseargv.slice(0, 2), taskConstants[task], "--send-signed-tx"]
+          await program.parseAsync(argsSend)
+
+        }
+
+        else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+          const isContinue = await prompts.forDefiContinue()
           const txnId = await prompts.transactionId()
-          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
-          await program.parseAsync(argsFetch)
-          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
-          await program.parseAsync(argsSend)
+          if (!isContinue.isContinue) {
+            const amount = await prompts.amount()
+            const withdrawAddress = await prompts.withdrawAddress()
+            const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`, "-i", `${txnId.id}`]
+            await program.parseAsync(argsWithdraw)
+            const argsSign = [...makeForDefiArguments("sign", baseargv, txnId.id), "--withdrawal"]
+            await program.parseAsync(argsSign)
+          }
+          else {
+            const argsFetch = [...makeForDefiArguments("fetch", baseargv, txnId.id), "--withdrawal"]
+            await program.parseAsync(argsFetch)
+            const argsSend = [...baseargv.slice(0, 2), taskConstants[task], "-i", `${txnId.id}`, "--send-signed-tx"]
+            await program.parseAsync(argsSend)
+          }
+        }
+
+        else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
+          const context: Context = contextEnv(walletProperties.path, walletProperties.network)
+          const amount = await prompts.amount()
+          const withdrawAddress = await prompts.withdrawAddress()
+          const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`,
+          `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          await program.parseAsync(argsWithdraw)
+
+          const argsSignSend = [...baseargv.slice(0, 2), "signAndSubmit", `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+          await program.parseAsync(argsSignSend)
+
         }
       }
+
+      else if (Object.keys(taskConstants)[11] == task.toString()) {
+        // exit the application
+        process.exit(1)
+      }
+
       else {
-        console.log("Missing params in ctx file")
+        console.log("Task not supported")
       }
     }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
-
-      await checkAddressRegistrationPrivateKey(walletProperties.wallet, walletProperties.network!, walletProperties.path!)
-
-      const { amount, nodeId, startTime, endTime } = await getDetailsForDelegation(taskConstants[task])
-      const argsDelegate = [...baseargv.slice(0, 2), "transaction", taskConstants[task], '-n', `${nodeId}`, `--network=${walletProperties.network}`, '-a', `${amount}`, '-s', `${startTime}`, '-e', `${endTime}`, `--env-path=${walletProperties.path}`, "--get-hacked"]
-      await program.parseAsync(argsDelegate)
-    }
-    else {
-      console.log("only pvt key and ledger supported for delegation right now")
-    }
-  }
-
-  // Mirror funds
-  else if (Object.keys(taskConstants)[8] == (task.toString())) {
-
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] || walletProperties.wallet == Object.keys(walletConstants)[1]) {
-      const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--ctx-file=ctx.json`]
-      await program.parseAsync(argsInfo)
-    }
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.path && walletProperties.network) {
-      const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      await program.parseAsync(argsInfo)
-    }
-    else {
-      console.log("Incorrect arguments passed!")
-    }
-  }
-
-  // Claim Rewards
-  else if (Object.keys(taskConstants)[9] == task.toString()) {
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
-      const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress } = readInfoFromCtx("ctx.json")
-      const isUnclaimed = await isUnclaimedReward(ctxCAddress!, ctxNetwork)
-      if (isUnclaimed) await claimRewardsLedger(walletProperties.wallet, ctxCAddress!, ctxDerivationPath!, ctxNetwork)
-    }
-
-    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
-      const context: Context = contextFile("ctx.json")
-      const isUnclaimed = await isUnclaimedReward(context.cAddressHex!, context.config.hrp)
-      if (isUnclaimed) {
-        const isContinue = await prompts.forDefiContinue()
-        const txnId = await prompts.transactionId()
-        if (!isContinue.isContinue) {
-          await claimRewardsForDefi(walletProperties.wallet, txnId.id)
-          const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
-          await program.parseAsync(argsSign)
-        }
-        else {
-          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
-          await program.parseAsync(argsFetch)
-          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
-          await program.parseAsync(argsSend)
-        }
-      }
-    }
-
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
-      const context: Context = contextEnv(walletProperties.path, walletProperties.network)
-      const isUnclaimed = await isUnclaimedReward(context.cAddressHex!, context.config.hrp)
-      if (isUnclaimed) await claimRewardsPrivateKey(walletProperties.wallet, context)
-    }
-  }
-
-  // Withdraw funds
-  else if (Object.keys(taskConstants)[10] == task.toString()) {
-    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
-      const { derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
-      const amount = await prompts.amount()
-      const withdrawAddress = await prompts.withdrawAddress()
-      const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`,]
-      await program.parseAsync(argsWithdraw)
-
-      const argsSign = [...baseargv.slice(0, 2), "sign-hash", "--derivation-path", ctxDerivationPath!]
-      await program.parseAsync(argsSign)
-
-      const argsSend = [...baseargv.slice(0, 2), taskConstants[task],  "--send-signed-tx"]
-      await program.parseAsync(argsSend)
-
-    }
-
-    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
-      const isContinue = await prompts.forDefiContinue()
-      const txnId = await prompts.transactionId()
-      if (!isContinue.isContinue) {
-        const amount = await prompts.amount()
-        const withdrawAddress = await prompts.withdrawAddress()
-        const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`, "-i", `${txnId.id}`]
-        await program.parseAsync(argsWithdraw)
-        const argsSign = [...makeForDefiArguments("sign", baseargv, txnId.id), "--withdrawal"]
-        await program.parseAsync(argsSign)
-      }
-      else {
-        const argsFetch = [...makeForDefiArguments("fetch", baseargv, txnId.id), "--withdrawal"]
-        await program.parseAsync(argsFetch)
-        const argsSend = [...baseargv.slice(0, 2), taskConstants[task], "-i", `${txnId.id}`, "--send-signed-tx"]
-        await program.parseAsync(argsSend)
-      }
-    }
-
-    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
-      const context: Context = contextEnv(walletProperties.path, walletProperties.network)
-      const amount = await prompts.amount()
-      const withdrawAddress = await prompts.withdrawAddress()
-      const argsWithdraw = [...baseargv.slice(0, 2), taskConstants[task], '-a', `${amount.amount}`, "-t", `${withdrawAddress.address}`,
-      `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      await program.parseAsync(argsWithdraw)
-
-      const argsSignSend = [...baseargv.slice(0, 2), "signAndSubmit", `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
-      await program.parseAsync(argsSignSend)
-
-    }
-  }
-
-  else {
-    console.log("Task not supported")
   }
 }
 
