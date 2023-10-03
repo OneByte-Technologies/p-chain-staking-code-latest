@@ -324,6 +324,7 @@ export async function interactiveCli(baseargv: string[]) {
       console.log("Incorrect arguments passed!")
     }
   }
+  
   // Adding a validator
   else if (Object.keys(taskConstants)[8] == task.toString()) {
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
