@@ -43,8 +43,8 @@ export async function interactiveCli(baseargv: string[]) {
     }
   }
 
-  // Functions for export and import to move funds between chains
-  else if (Object.keys(taskConstants).slice(4, 6).includes(task.toString())) {
+  // Functions for exporting funds from C to P
+  else if (Object.keys(taskConstants)[4] == (task.toString())) {
 
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
@@ -59,15 +59,6 @@ export async function interactiveCli(baseargv: string[]) {
         }
         console.log("Please approve export transaction")
         await program.parseAsync(argsExport)
-        const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
-        // ask for fees if its importTxPC
-        if (taskConstants[task].slice(0, 1) == 'P') {
-          const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
-          const exportFees = await prompts.fees(importBaseFee);
-          argsImport.push('-f', `${exportFees.fees}`)
-        }
-        console.log("Please approve import transaction")
-        await program.parseAsync(argsImport)
       }
       else {
         console.log("Missing params in ctx file")
@@ -90,16 +81,6 @@ export async function interactiveCli(baseargv: string[]) {
               argsExport.push('-f', `${exportFees.fees}`)
             }
             await program.parseAsync(argsExport)
-          }
-          else if (txnType.txn.includes("Import")) {
-            const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "-i", `${txnId.id}`]
-            // ask for fees if its importTxPC
-            if (taskConstants[task].slice(0, 1) == 'P') {
-              const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
-              const exportFees = await prompts.fees(importBaseFee);
-              argsImport.push('-f', `${exportFees.fees}`)
-            }
-            await program.parseAsync(argsImport)
           }
           const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
           await program.parseAsync(argsSign)
@@ -128,12 +109,72 @@ export async function interactiveCli(baseargv: string[]) {
       }
       console.log("Please approve export transaction")
       await program.parseAsync(argsExport)
+
+    }
+    else {
+      console.log("Incorrect arguments passed!")
+    }
+  }
+
+  // Functions for importing funds from C to P
+  else if (Object.keys(taskConstants)[5] == (task.toString())) {
+    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxDerivationPath) {
+        const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
+        // ask for fees if its importTxPC
+        if (taskConstants[task].slice(0, 1) == 'P') {
+          const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
+          const exportFees = await prompts.fees(importBaseFee);
+          argsImport.push('-f', `${exportFees.fees}`)
+        }
+        console.log("Please approve import transaction")
+        await program.parseAsync(argsImport)
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+
+    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+        const isContinue = await prompts.forDefiContinue()
+        if (!isContinue.isContinue) {
+          const txnType = await prompts.forDefiTxn()
+          const txnId = await prompts.transactionId()
+          if (txnType.txn.includes("Import")) {
+            const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "-i", `${txnId.id}`]
+            // ask for fees if its importTxPC
+            if (taskConstants[task].slice(0, 1) == 'P') {
+              const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
+              const exportFees = await prompts.fees(importBaseFee);
+              argsImport.push('-f', `${exportFees.fees}`)
+            }
+            await program.parseAsync(argsImport)
+          }
+          const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
+          await program.parseAsync(argsSign)
+        }
+        else {
+          const txnId = await prompts.transactionId()
+          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+          await program.parseAsync(argsFetch)
+          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+          await program.parseAsync(argsSend)
+        }
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
       const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
       // ask for fees if its importTxPC
       if (taskConstants[task].slice(0, 1) == 'P') {
         const importBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(1, 2), walletProperties.path, walletProperties.network)
-        const exportFees = await prompts.fees(importBaseFee);
-        argsImport.push('-f', `${exportFees.fees}`)
+        const importFees = await prompts.fees(importBaseFee);
+        argsImport.push('-f', `${importFees.fees}`)
       }
       console.log("Please approve import transaction")
       await program.parseAsync(argsImport)
@@ -143,8 +184,148 @@ export async function interactiveCli(baseargv: string[]) {
     }
   }
 
+  // Functions for exporting funds from P to C
+  else if (Object.keys(taskConstants)[6] == (task.toString())) {
+
+    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxDerivationPath) {
+        const amount = await prompts.amount()
+        const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
+        // ask for fees if its exportCP transaction
+        if (taskConstants[task].slice(0, 1) == 'C') {
+          const exportBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(0, 1))
+          const exportFees = await prompts.fees(exportBaseFee);
+          argsExport.push('-f', `${exportFees.fees}`)
+        }
+        console.log("Please approve export transaction")
+        await program.parseAsync(argsExport)
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+        const isContinue = await prompts.forDefiContinue()
+        if (!isContinue.isContinue) {
+          const txnType = await prompts.forDefiTxn()
+          const txnId = await prompts.transactionId()
+          if (txnType.txn.includes("Export")) {
+            const amount = await prompts.amount()
+            const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, "-i", `${txnId.id}`]
+            // ask for fees if its exportCP transaction
+            if (taskConstants[task].slice(0, 1) == 'C') {
+              const exportBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(0, 1))
+              const exportFees = await prompts.fees(exportBaseFee);
+              argsExport.push('-f', `${exportFees.fees}`)
+            }
+            await program.parseAsync(argsExport)
+          }
+          const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
+          await program.parseAsync(argsSign)
+        }
+        else {
+          const txnId = await prompts.transactionId()
+          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+          await program.parseAsync(argsFetch)
+          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+          await program.parseAsync(argsSend)
+        }
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
+      // // explicitly throw error when ctx.json doesn't exist
+      const amount = await prompts.amount()
+      const argsExport = [...baseargv.slice(0, 2), "transaction", `export${taskConstants[task].slice(-2)}`, '-a', `${amount.amount}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+      // ask for fees if its exportCP transaction
+      if (taskConstants[task].slice(0, 1) == 'C') {
+        const exportBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(0, 1), walletProperties.path, walletProperties.network)
+        const exportFees = await prompts.fees(exportBaseFee);
+        argsExport.push('-f', `${exportFees.fees}`)
+      }
+      console.log("Please approve export transaction")
+      await program.parseAsync(argsExport)
+
+    }
+    else {
+      console.log("Incorrect arguments passed!")
+    }
+  }
+
+  // Functions for importing funds from P to C
+  else if (Object.keys(taskConstants)[7] == (task.toString())) {
+    if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxDerivationPath) {
+        const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
+        // ask for fees if its importTxPC
+        if (taskConstants[task].slice(0, 1) == 'P') {
+          const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
+          const exportFees = await prompts.fees(importBaseFee);
+          argsImport.push('-f', `${exportFees.fees}`)
+        }
+        console.log("Please approve import transaction")
+        await program.parseAsync(argsImport)
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+
+    else if (walletProperties.wallet == Object.keys(walletConstants)[1] && fileExists("ctx.json")) {
+      const { network: ctxNetwork, vaultId: ctxVaultId, publicKey: ctxPublicKey } = readInfoFromCtx("ctx.json")
+      if (ctxNetwork && ctxVaultId && ctxPublicKey) {
+        const isContinue = await prompts.forDefiContinue()
+        if (!isContinue.isContinue) {
+          const txnType = await prompts.forDefiTxn()
+          const txnId = await prompts.transactionId()
+          if (txnType.txn.includes("Import")) {
+            const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, "-i", `${txnId.id}`]
+            // ask for fees if its importTxPC
+            if (taskConstants[task].slice(0, 1) == 'P') {
+              const importBaseFee = await getFeesBasedOnChain(taskConstants[task].slice(1, 2))
+              const exportFees = await prompts.fees(importBaseFee);
+              argsImport.push('-f', `${exportFees.fees}`)
+            }
+            await program.parseAsync(argsImport)
+          }
+          const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
+          await program.parseAsync(argsSign)
+        }
+        else {
+          const txnId = await prompts.transactionId()
+          const argsFetch = makeForDefiArguments("fetch", baseargv, txnId.id)
+          await program.parseAsync(argsFetch)
+          const argsSend = makeForDefiArguments("send", baseargv, txnId.id)
+          await program.parseAsync(argsSend)
+        }
+      }
+      else {
+        console.log("Missing params in ctx file")
+      }
+    }
+    else if (walletProperties.wallet == Object.keys(walletConstants)[2] && walletProperties.network && walletProperties.path) {
+      const argsImport = [...baseargv.slice(0, 2), "transaction", `import${taskConstants[task].slice(-2)}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
+      // ask for fees if its importTxPC
+      if (taskConstants[task].slice(0, 1) == 'P') {
+        const importBaseFee = await getFeesBasedOnChainForPrivateKey(taskConstants[task].slice(1, 2), walletProperties.path, walletProperties.network)
+        const importFees = await prompts.fees(importBaseFee);
+        argsImport.push('-f', `${importFees.fees}`)
+      }
+      console.log("Please approve import transaction")
+      await program.parseAsync(argsImport)
+    }
+    else {
+      console.log("Incorrect arguments passed!")
+    }
+  }
   // Adding a validator
-  else if (Object.keys(taskConstants)[6] == task.toString()) {
+  else if (Object.keys(taskConstants)[8] == task.toString()) {
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
         publicKey: ctxPublicKey, flareAddress: ctxPAddress } = readInfoFromCtx("ctx.json")
@@ -210,7 +391,7 @@ export async function interactiveCli(baseargv: string[]) {
   }
 
   // Delegating to a Validator
-  else if (Object.keys(taskConstants)[7] == task.toString()) {
+  else if (Object.keys(taskConstants)[9] == task.toString()) {
 
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress,
@@ -275,7 +456,7 @@ export async function interactiveCli(baseargv: string[]) {
   }
 
   // Mirror funds
-  else if (Object.keys(taskConstants)[8] == (task.toString())) {
+  else if (Object.keys(taskConstants)[10] == (task.toString())) {
 
     if (walletProperties.wallet == Object.keys(walletConstants)[0] || walletProperties.wallet == Object.keys(walletConstants)[1]) {
       const argsInfo = [...baseargv.slice(0, 2), "info", taskConstants[task], `--ctx-file=ctx.json`]
@@ -291,7 +472,7 @@ export async function interactiveCli(baseargv: string[]) {
   }
 
   // Claim Rewards
-  else if (Object.keys(taskConstants)[9] == task.toString()) {
+  else if (Object.keys(taskConstants)[11] == task.toString()) {
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { network: ctxNetwork, derivationPath: ctxDerivationPath, ethAddress: ctxCAddress } = readInfoFromCtx("ctx.json")
       const isUnclaimed = await isUnclaimedReward(ctxCAddress!, ctxNetwork)
@@ -326,7 +507,7 @@ export async function interactiveCli(baseargv: string[]) {
   }
 
   // Withdraw funds
-  else if (Object.keys(taskConstants)[10] == task.toString()) {
+  else if (Object.keys(taskConstants)[12] == task.toString()) {
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
       const amount = await prompts.amount()
@@ -337,7 +518,7 @@ export async function interactiveCli(baseargv: string[]) {
       const argsSign = [...baseargv.slice(0, 2), "sign-hash", "--derivation-path", ctxDerivationPath!]
       await program.parseAsync(argsSign)
 
-      const argsSend = [...baseargv.slice(0, 2), taskConstants[task],  "--send-signed-tx"]
+      const argsSend = [...baseargv.slice(0, 2), taskConstants[task], "--send-signed-tx"]
       await program.parseAsync(argsSend)
 
     }
