@@ -17,7 +17,7 @@ export const taskConstants: ScreenConstantsInterface = {
   'Get Mirror fund details': 'mirror',
   'Claim Rewards': "rewards",
   'Withdraw funds': "withdrawal",
-  'Import Funds to P-Chain (incase moving assests from C-Chain to P-Chain fails)': 'import',
+  'Import Funds (incase moving assests from C-Chain to P-Chain fails)': 'import',
 }
 
 /**
