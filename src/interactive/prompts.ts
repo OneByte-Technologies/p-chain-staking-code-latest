@@ -273,7 +273,7 @@ export const prompts = {
     const questions = [{
       type: 'list',
       name: 'type',
-      message: chalk.magenta("To which chain you want to import funds?"),
+      message: chalk.magenta("Please select the destination chain to which you want to import your funds?"),
       choices: [
         "P",
         "C"
