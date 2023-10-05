@@ -270,5 +270,18 @@ export const prompts = {
       message: chalk.magenta("Please enter the C-address where you want to withdraw your funds:"),
     }];
     return inquirer.prompt(questions);
-  }
+  },
+
+  importTrxType: async () => {
+    const questions = [{
+      type: 'list',
+      name: 'type',
+      message: chalk.magenta("To which chain you want to import funds?"),
+      choices: [
+        "P",
+        "C"
+      ],
+    }];
+    return inquirer.prompt(questions);
+  },
 }

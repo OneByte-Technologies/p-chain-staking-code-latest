@@ -16,7 +16,8 @@ export const taskConstants: ScreenConstantsInterface = {
   'Delegate to a validator node': "delegate",
   'Get Mirror fund details': 'mirror',
   'Claim Rewards': "rewards",
-  'Withdraw funds': "withdrawal"
+  'Withdraw funds': "withdrawal",
+  'Import Funds to P-Chain (incase moving assests from C-Chain to P-Chain fails)': 'import',
 }
 
 /**
