@@ -267,6 +267,6 @@ export const prompts = {
       message: chalk.magenta("Please enter the C-address where you want to withdraw your funds:"),
     }];
     return inquirer.prompt(questions);
-  },
+  }
 
 }
