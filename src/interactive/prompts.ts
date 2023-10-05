@@ -269,16 +269,4 @@ export const prompts = {
     return inquirer.prompt(questions);
   },
 
-  importTrxType: async () => {
-    const questions = [{
-      type: 'list',
-      name: 'type',
-      message: chalk.magenta("To which chain you want to import funds?"),
-      choices: [
-        "P",
-        "C"
-      ],
-    }];
-    return inquirer.prompt(questions);
-  },
 }
