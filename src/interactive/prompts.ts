@@ -268,5 +268,4 @@ export const prompts = {
     }];
     return inquirer.prompt(questions);
   }
-
 }
