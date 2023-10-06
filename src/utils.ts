@@ -277,7 +277,7 @@ export function isAlreadySentToChain(id: string): boolean {
 //////////////////////////////////////////////////////////////////////////////////////////
 // limiting delegation number
 
-export function countpAddressInDelegation(validators: any[], pAddressBech32: string): { count: number, validatorNodeIds: string[] } {
+function countpAddressInDelegation(validators: any[], pAddressBech32: string): { count: number, validatorNodeIds: string[] } {
   let count = 0
   const validatorNodeIds = []
   for (const item of validators) {
