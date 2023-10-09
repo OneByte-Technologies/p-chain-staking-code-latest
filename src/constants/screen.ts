@@ -16,9 +16,9 @@ export const taskConstants: ScreenConstantsInterface = {
   'Delegate to a validator node': "delegate",
   'Get Mirror fund details': 'mirror',
   'Claim Rewards': "rewards",
-  'Withdraw funds': "withdrawal",
-  'Import Funds to P-Chain (incase moving assests from C-Chain to P-Chain fails)': 'import',
-  'Optout of Airdrop': "optout"
+  'Withdraw funds': 'withdrawal',
+  'Import Funds (incase moving assets fails for either P chain or C chain)': 'import',
+  'Optout of Airdrop': 'optout'
 }
 
 /**

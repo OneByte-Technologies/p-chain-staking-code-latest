@@ -357,9 +357,13 @@ export async function fetchMirrorFunds(ctx: Context) {
   };
 }
 
+/**
+ * @description - function to opt you out of airdrop
+ * @param {optOutOfAirdrop} params - optout parameters
+ */
 export async function optOutOfAirdrop(params: OptOutOfAirdropInterface) {
   try {
-    console.log("Opting you out of airdrop")
+    console.log('Opting you out of airdrop')
     const { cAddress, network, wallet, derivationPath, pvtKey, transactionId } = params
     const rpcUrl = rpcUrlFromNetworkConfig(network);
     const distributionToDelegatorsContractAddress = await getContractAddress(network, distributionToDelegators)
@@ -386,7 +390,6 @@ export async function optOutOfAirdrop(params: OptOutOfAirdropInterface) {
       gasLimit: gasEstimate
     }
     await signContractTransaction(wallet, unsignedTx, contract, derivationPath, transactionId, pvtKey)
-    console.log("You have successfully opted out of airdrop")
   } catch (error: any) {
     console.log(chalk.red(error.message))
   }

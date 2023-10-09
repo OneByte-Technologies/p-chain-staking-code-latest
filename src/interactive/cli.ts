@@ -761,7 +761,7 @@ async function optOutOfAirdropLedger(wallet: string, ctxCAddress: string, ctxDer
   };
   console.log("Please sign the transaction on your ledger")
   await optOutOfAirdrop(claimRewardsParams)
-  console.log(chalk.green("Rwards successfully claimed"))
+  console.log(chalk.green("Successfully opted out"))
 }
 
 async function optOutOfAirdropForDefi(wallet: string, transactionId: string) {
