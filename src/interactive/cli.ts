@@ -144,7 +144,6 @@ export async function interactiveCli(baseargv: string[]) {
         // ask for fees if its importTxPC
         if (taskConstants[task].slice(0, 1) == 'P') {
           const exportFees = await prompts.fees(DEFAULT_EVM_TX_FEE);
-          console.log("export fees", exportFees.fees)
           argsImport.push('-f', `${exportFees.fees}`)
         }
         await program.parseAsync(argsImport)
