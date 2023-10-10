@@ -365,9 +365,9 @@ export async function interactiveCli(baseargv: string[]) {
     const importDestChain = await prompts.importTrxType()
     let trxType;
     if (importDestChain.type == 'P')
-      trxType = 'PC'
-    if (importDestChain.type == 'C')
       trxType = 'CP'
+    if (importDestChain.type == 'C')
+      trxType = 'PC'
 
     if (walletProperties.wallet == Object.keys(walletConstants)[0] && fileExists("ctx.json")) {
       const { network: ctxNetwork, derivationPath: ctxDerivationPath } = readInfoFromCtx("ctx.json")
@@ -375,9 +375,8 @@ export async function interactiveCli(baseargv: string[]) {
         const argsImport = [...baseargv.slice(0, 2), "transaction", `import${trxType}`, "--blind", "true", "--derivation-path", ctxDerivationPath, `--network=${ctxNetwork}`, "--ledger"]
         // ask for fees if its importTxPC
         if (importDestChain.type == 'C') {
-          const importBaseFee = await getFeesBasedOnChain(importDestChain.type)
-          const exportFees = await prompts.fees(importBaseFee);
-          argsImport.push('-f', `${exportFees.fees}`)
+          const importFees = await prompts.fees(DEFAULT_EVM_TX_FEE);
+          argsImport.push('-f', `${importFees.fees}`)
         }
         console.log("Please approve import transaction")
         await program.parseAsync(argsImport)
@@ -396,9 +395,8 @@ export async function interactiveCli(baseargv: string[]) {
           const argsImport = [...baseargv.slice(0, 2), "transaction", `import${trxType}`, "-i", `${txnId.id}`]
           // ask for fees if its importTxPC
           if (importDestChain.type == 'C') {
-            const importBaseFee = await getFeesBasedOnChain(importDestChain.type)
-            const importFees = await prompts.fees(importBaseFee);
-            argsImport.push('-f', `${importFees.fees}`)
+            const exportFees = await prompts.fees(DEFAULT_EVM_TX_FEE);
+            argsImport.push('-f', `${exportFees.fees}`)
           }
           await program.parseAsync(argsImport)
           const argsSign = makeForDefiArguments("sign", baseargv, txnId.id)
@@ -420,9 +418,8 @@ export async function interactiveCli(baseargv: string[]) {
       const argsImport = [...baseargv.slice(0, 2), "transaction", `import${trxType}`, `--env-path=${walletProperties.path}`, `--network=${walletProperties.network}`, "--get-hacked"]
       // ask for fees if its importTxPC
       if (importDestChain.type == 'C') {
-        const importBaseFee = await getFeesBasedOnChainForPrivateKey(importDestChain.type, walletProperties.path, walletProperties.network)
-        const exportFees = await prompts.fees(importBaseFee);
-        argsImport.push('-f', `${exportFees.fees}`)
+        const importFees = await prompts.fees(DEFAULT_EVM_TX_FEE);
+        argsImport.push('-f', `${importFees.fees}`)
       }
       console.log("Please approve import transaction")
       await program.parseAsync(argsImport)
