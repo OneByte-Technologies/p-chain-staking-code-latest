@@ -48,9 +48,9 @@ export async function cli(program: Command) {
     .option("--ledger", "Use ledger to sign transactions")
     .option("--blind", "Blind signing (used for ledger)", true)
     .option("--derivation-path <derivation-path>", "Ledger address derivation path", BASE_DERIVATION_PATH)
-    .option("--get-hacked", "Use the .env file with the exposed private key")
     .option("--ctx-file <file>", "Context file as returned by init-ctx", 'ctx.json')
     .option("--env-path <path>", "Path to the .env file")
+    .option("--get-hacked", "Use the .env file with the exposed private key")
   // interactive mode
   program
     .command("interactive").description("Interactive mode")
@@ -514,7 +514,7 @@ async function cliBuildAndSendTxUsingPrivateKey(transactionType: string, ctx: Co
 
 async function signForDefi(transaction: string, ctx: string, withdrawal: boolean = false): Promise<void> {
   const txid = await sendToForDefi(transaction, ctx, withdrawal)
-  logSuccess(`Transaction with hash ${txid} sent to the node`)
+  logSuccess(`Transaction with hash ${txid} sent to the ForDefi`)
 }
 
 async function fetchForDefiTx(transaction: string, withdrawal: boolean = false): Promise<void> {
@@ -532,6 +532,16 @@ async function withdraw_getHash(ctx: Context, to: string, amount: number, id: st
 
 async function withdraw_useSignature(ctx: Context, id: string): Promise<void> {
   const txId = await sendSignedWithdrawalTransaction(ctx, id)
+  logSuccess(`Transaction ${txId} sent to the node`)
+}
+
+async function optOut_getHash(ctx: Context, to: string, amount: number, id: string, nonce: number): Promise<void> {
+  const fileId = await createOptOutTransaction(ctx, id, nonce)
+  logSuccess(`Transaction ${fileId} constructed`)
+}
+
+async function optOut_useSignature(ctx: Context, id: string): Promise<void> {
+  const txId = await sendSignedOptOutTransaction(ctx, id)
   logSuccess(`Transaction ${txId} sent to the node`)
 }
 
