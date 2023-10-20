@@ -535,16 +535,6 @@ async function withdraw_useSignature(ctx: Context, id: string): Promise<void> {
   logSuccess(`Transaction ${txId} sent to the node`)
 }
 
-async function optOut_getHash(ctx: Context, to: string, amount: number, id: string, nonce: number): Promise<void> {
-  const fileId = await createOptOutTransaction(ctx, id, nonce)
-  logSuccess(`Transaction ${fileId} constructed`)
-}
-
-async function optOut_useSignature(ctx: Context, id: string): Promise<void> {
-  const txId = await sendSignedOptOutTransaction(ctx, id)
-  logSuccess(`Transaction ${txId} sent to the node`)
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////
 // smart contract transaction signing
 
